@@ -31,6 +31,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.simple.JSONObject;
+import org.wso2.apim.monetization.impl.workflow.StripeSubscriptionCreationWorkflowExecutor;
+import org.wso2.apim.monetization.impl.workflow.StripeSubscriptionDeletionWorkflowExecutor;
 import org.wso2.carbon.apimgt.impl.monetization.*;
 import org.wso2.carbon.apimgt.api.*;
 import org.wso2.carbon.apimgt.api.model.*;
@@ -43,6 +45,7 @@ import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APINameComparator;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.impl.workflow.WorkflowExecutor;
 import org.wso2.carbon.apimgt.persistence.APIPersistence;
 import org.wso2.carbon.apimgt.persistence.PersistenceManager;
 import org.wso2.carbon.apimgt.persistence.dto.Organization;
@@ -984,6 +987,14 @@ public class StripeMonetizationImpl extends AbstractMonetization {
         return apiSortedList;
     }
 
+    public WorkflowExecutor getCreationWorkflowExecutor() {
+        return new StripeSubscriptionCreationWorkflowExecutor();
+    }
+
+    public WorkflowExecutor getRemovalWorkflowExecutor() {
+        return new StripeSubscriptionDeletionWorkflowExecutor();
+    }
+
     public boolean publishUsageData(Object usageData, MonetizationUsagePublishInfo lastPublishInfo)
             throws MonetizationException {
         Long currentTimestamp;
@@ -1104,7 +1115,7 @@ public class StripeMonetizationImpl extends AbstractMonetization {
                     String subscriptionUUID = stripeMonetizationDAO.getSubscriptionUUID(Integer.parseInt(subscriptionId));
                     SubscriptionPolicy subscriptionPolicy = apiMgtDAO.getSubscriptionPolicyByUUID(subscriptionUUID);
                     String usageMetric = subscriptionPolicy.getUsageMetric();
-                    //gets the subscription policy
+                    //gets the subscription policy and the then the usage metric
 
                     if (subscriptionItem.getPlan().getUsageType().equals(
                             StripeMonetizationConstants.METERED_PLAN)) {
