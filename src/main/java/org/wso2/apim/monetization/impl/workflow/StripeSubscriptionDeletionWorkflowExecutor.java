@@ -98,39 +98,6 @@ public class StripeSubscriptionDeletionWorkflowExecutor extends WorkflowExecutor
     }
 
     /**
-     * Returns the stripe key of the platform/tenant
-     *
-     * @param tenantId id of the tenant
-     * @return the stripe key of the platform/tenant
-     * @throws WorkflowException
-     */
-    private String getPlatformAccountKey(int tenantId) throws WorkflowException {
-
-        String stripePlatformAccountKey = null;
-        String tenantDomain = APIUtil.getTenantDomainFromTenantId(tenantId);
-        try {
-            //get the stripe key of platform account from  tenant conf json file
-            JSONObject tenantConfig = APIUtil.getTenantConfig(tenantDomain);
-            if (tenantConfig.containsKey(StripeMonetizationConstants.MONETIZATION_INFO)) {
-                JSONObject monetizationInfo = (JSONObject) tenantConfig
-                        .get(StripeMonetizationConstants.MONETIZATION_INFO);
-                if (monetizationInfo.containsKey(StripeMonetizationConstants.BILLING_ENGINE_PLATFORM_ACCOUNT_KEY)) {
-                    stripePlatformAccountKey = monetizationInfo
-                            .get(StripeMonetizationConstants.BILLING_ENGINE_PLATFORM_ACCOUNT_KEY).toString();
-                    if (StringUtils.isBlank(stripePlatformAccountKey)) {
-                        String errorMessage = "Stripe platform account key is empty for tenant : " + tenantDomain;
-                        throw new WorkflowException(errorMessage);
-                    }
-                    return stripePlatformAccountKey;
-                }
-            }
-        } catch (APIManagementException e) {
-            throw new WorkflowException("Failed to get the configuration for tenant from DB:  " + tenantDomain, e);
-        }
-        return stripePlatformAccountKey;
-    }
-
-    /**
      * This method completes subscription creation workflow and return workflow response back to the caller
      *
      * @param workflowDTO The WorkflowDTO which contains workflow contextual information related to the workflow
