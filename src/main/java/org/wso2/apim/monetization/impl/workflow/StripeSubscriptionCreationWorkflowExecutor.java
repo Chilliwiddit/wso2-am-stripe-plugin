@@ -73,8 +73,6 @@ import java.util.Properties;
 public class StripeSubscriptionCreationWorkflowExecutor extends WorkflowExecutor {
 
     private static final Log log = LogFactory.getLog(StripeSubscriptionCreationWorkflowExecutor.class);
-    StripeMonetizationDAO stripeMonetizationDAO = StripeMonetizationDAO.getInstance();
-    APIPersistence apiPersistenceInstance;
 
     @Override
     public String getWorkflowType() {

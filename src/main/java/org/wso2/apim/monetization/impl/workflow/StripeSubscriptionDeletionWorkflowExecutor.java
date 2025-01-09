@@ -69,7 +69,6 @@ import java.util.Properties;
 public class StripeSubscriptionDeletionWorkflowExecutor extends WorkflowExecutor {
 
     private static final Log log = LogFactory.getLog(StripeSubscriptionDeletionWorkflowExecutor.class);
-    APIPersistence apiPersistenceInstance;
 
     @Override
     public String getWorkflowType() {
