@@ -6,7 +6,7 @@
 
     <groupId>org.wso2.apim.monetization</groupId>
     <artifactId>org.wso2.apim.monetization.impl</artifactId>
-    <version>1.5.1-SNAPSHOT</version>
+    <version>1.5.1-DEMO</version>
     <packaging>bundle</packaging>
 
     <parent>
@@ -70,7 +70,7 @@
     </dependencies>
 
     <properties>
-        <carbon.apimgt.version>9.29.119</carbon.apimgt.version>
+        <carbon.apimgt.version>9.30.89</carbon.apimgt.version>
         <commons.lang.version>2.6</commons.lang.version>
         <stripe.version>9.8.0</stripe.version>
         <elastic.client.version>8.13.1</elastic.client.version>
