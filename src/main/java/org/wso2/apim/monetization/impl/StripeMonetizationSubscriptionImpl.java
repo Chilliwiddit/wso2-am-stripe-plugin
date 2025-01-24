@@ -28,6 +28,7 @@ import org.wso2.carbon.apimgt.impl.dto.SubscriptionWorkflowDTO;
 import org.wso2.carbon.apimgt.impl.monetization.MonetizationSubscription;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.impl.workflow.WorkflowConstants;
 import org.wso2.carbon.apimgt.impl.workflow.WorkflowException;
 import org.wso2.carbon.apimgt.persistence.APIPersistence;
 import org.wso2.carbon.apimgt.persistence.PersistenceManager;
@@ -47,6 +48,7 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
     private static final Log log = LogFactory.getLog(StripeMonetizationSubscriptionImpl.class);
     StripeMonetizationDAO stripeMonetizationDAO = StripeMonetizationDAO.getInstance();
     APIPersistence apiPersistenceInstance;
+    int applicationId = 0;
 
     @Override
     public void monetizeSubscription(WorkflowDTO workflowDTO, API api) throws WorkflowException {
@@ -100,11 +102,14 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
         //needed to create artifacts in the stripe connected account
         RequestOptions requestOptions = RequestOptions.builder().setStripeAccount(connectedAccountKey).build();
         try (Connection con = APIMgtDBUtil.getConnection()) {
-            subscriber = apiMgtDAO.getSubscriber(subWorkFlowDTO.getSubscriber());
+            if (subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID) != null){
+                applicationId = Integer.parseInt(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID));
+            }
+            subscriber = apiMgtDAO.getSubscriber(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.SUBSCRIBER));
             // check whether the application is already registered as a customer under the particular
             // APIprovider/Connected Account in Stripe
-            monetizationSharedCustomer = stripeMonetizationDAO.getSharedCustomer(subWorkFlowDTO.getApplicationId(),
-                    subWorkFlowDTO.getApiProvider(), subWorkFlowDTO.getTenantId());
+            monetizationSharedCustomer = stripeMonetizationDAO.getSharedCustomer(applicationId,
+                    subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APIPROVIDER), subWorkFlowDTO.getTenantId());
             if (monetizationSharedCustomer.getSharedCustomerId() == null) {
                 // checks whether the subscriber is already registered as a customer Under the
                 // tenant/Platform account in Stripe
@@ -118,16 +123,16 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
             }
             //creating Subscriptions
             int apiId = ApiMgtDAO.getInstance().getAPIID(api.getUuid(), con);
-            String planId = stripeMonetizationDAO.getBillingEnginePlanIdForTier(apiId, subWorkFlowDTO.getTierName());
+            String planId = stripeMonetizationDAO.getBillingEnginePlanIdForTier(apiId, subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.TIER_NAME));
             createMonetizedSubscriptions(planId, monetizationSharedCustomer, requestOptions, subWorkFlowDTO, api.getUuid());
         } catch (APIManagementException e) {
-            String errorMessage = "Could not monetize subscription for API : " + subWorkFlowDTO.getApiName()
-                    + " by Application : " + subWorkFlowDTO.getApplicationName();
+            String errorMessage = "Could not monetize subscription for API : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME)
+                    + " by Application : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             log.error(errorMessage);
             throw new WorkflowException(errorMessage, e);
         } catch (StripeMonetizationException e) {
-            String errorMessage = "Could not monetize subscription for API : " + subWorkFlowDTO.getApiName()
-                    + " by Application " + subWorkFlowDTO.getApplicationName();
+            String errorMessage = "Could not monetize subscription for API : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME)
+                    + " by Application " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             log.error(errorMessage);
             throw new WorkflowException(errorMessage, e);
         } catch (SQLException e) {
@@ -188,11 +193,14 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
         //needed to create artifacts in the stripe connected account
         RequestOptions requestOptions = RequestOptions.builder().setStripeAccount(connectedAccountKey).build();
         try {
-            subscriber = apiMgtDAO.getSubscriber(subWorkFlowDTO.getSubscriber());
+            if (subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID) != null){
+                applicationId = Integer.parseInt(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID));
+            }
+            subscriber = apiMgtDAO.getSubscriber(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.SUBSCRIBER));
             // check whether the application is already registered as a customer under the particular
             // APIprovider/Connected Account in Stripe
-            monetizationSharedCustomer = stripeMonetizationDAO.getSharedCustomer(subWorkFlowDTO.getApplicationId(),
-                    subWorkFlowDTO.getApiProvider(), subWorkFlowDTO.getTenantId());
+            monetizationSharedCustomer = stripeMonetizationDAO.getSharedCustomer(applicationId,
+                    subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APIPROVIDER), subWorkFlowDTO.getTenantId());
             if (monetizationSharedCustomer.getSharedCustomerId() == null) {
                 // checks whether the subscriber is already registered as a customer Under the
                 // tenant/Platform account in Stripe
@@ -206,16 +214,16 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
             }
             //creating Subscriptions
             int apiId = ApiMgtDAO.getInstance().getAPIProductId(apiProduct.getId());
-            String planId = stripeMonetizationDAO.getBillingEnginePlanIdForTier(apiId, subWorkFlowDTO.getTierName());
+            String planId = stripeMonetizationDAO.getBillingEnginePlanIdForTier(apiId, subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.TIER_NAME));
             createMonetizedSubscriptions(planId, monetizationSharedCustomer, requestOptions, subWorkFlowDTO, apiProduct.getUuid());
         } catch (APIManagementException e) {
-            String errorMessage = "Could not monetize subscription for : " + subWorkFlowDTO.getApiName()
-                    + " by application : " + subWorkFlowDTO.getApplicationName();
+            String errorMessage = "Could not monetize subscription for : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME)
+                    + " by application : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             log.error(errorMessage);
             throw new WorkflowException(errorMessage, e);
         } catch (StripeMonetizationException e) {
-            String errorMessage = "Could not monetize subscription for : " + subWorkFlowDTO.getApiName()
-                    + " by application " + subWorkFlowDTO.getApplicationName();
+            String errorMessage = "Could not monetize subscription for : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME)
+                    + " by application " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             log.error(errorMessage);
             throw new WorkflowException(errorMessage, e);
         }
@@ -270,13 +278,16 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
         //needed to add,remove artifacts in connected account
         RequestOptions requestOptions = RequestOptions.builder().setStripeAccount(connectedAccountKey).build();
         try {
+            if (subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID) != null){
+                applicationId = Integer.parseInt(subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID));
+            }
             //get the stripe subscription id
             monetizedSubscription = stripeMonetizationDAO
-                    .getMonetizedSubscription(api.getUuid(), subWorkflowDTO.getApiName(),
-                            subWorkflowDTO.getApplicationId(), subWorkflowDTO.getTenantDomain());
+                    .getMonetizedSubscription(api.getUuid(), subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME),
+                            applicationId, subWorkflowDTO.getTenantDomain());
         } catch (StripeMonetizationException ex) {
             String errorMessage = "Could not retrieve monetized subscription info for : "
-                    + subWorkflowDTO.getApplicationName() + " by Application : " + subWorkflowDTO.getApplicationName();
+                    + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " by Application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             throw new WorkflowException(errorMessage, ex);
         }
         if (monetizedSubscription.getSubscriptionId() != null) {
@@ -291,18 +302,18 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
                     stripeMonetizationDAO.removeMonetizedSubscription(monetizedSubscription.getId());
                 }
                 if (log.isDebugEnabled()) {
-                    String msg = "Monetized subscriprion for : " + subWorkflowDTO.getApiName()
-                            + " by Application : " + subWorkflowDTO.getApplicationName() + " is removed successfully ";
+                    String msg = "Monetized subscriprion for : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME)
+                            + " by Application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME) + " is removed successfully ";
                     log.debug(msg);
                 }
             } catch (StripeException ex) {
                 String errorMessage = "Failed to remove subcription in billing engine for : "
-                        + subWorkflowDTO.getApiName() + " by Application : " + subWorkflowDTO.getApplicationName();
+                        + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " by Application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
                 log.error(errorMessage);
                 throw new WorkflowException(errorMessage, ex);
             } catch (StripeMonetizationException ex) {
                 String errorMessage = "Failed to remove monetization subcription info from DB of : "
-                        + subWorkflowDTO.getApiName() + " by Application : " + subWorkflowDTO.getApplicationName();
+                        + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " by Application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
                 log.error(errorMessage);
                 throw new WorkflowException(errorMessage, ex);
             }
@@ -339,13 +350,16 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
         //needed to add,remove artifacts in connected account
         RequestOptions requestOptions = RequestOptions.builder().setStripeAccount(connectedAccountKey).build();
         try {
+            if (subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID) != null){
+                applicationId = Integer.parseInt(subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID));
+            }
             //get the stripe subscription id
             monetizedSubscription = stripeMonetizationDAO
-                    .getMonetizedSubscription(apiProduct.getUuid(), subWorkflowDTO.getApiName(),
-                            subWorkflowDTO.getApplicationId(), subWorkflowDTO.getTenantDomain());
+                    .getMonetizedSubscription(apiProduct.getUuid(), subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME),
+                            applicationId, subWorkflowDTO.getTenantDomain());
         } catch (StripeMonetizationException ex) {
             String errorMessage = "Could not retrieve monetized subscription info for : "
-                    + subWorkflowDTO.getApplicationName() + " by application : " + subWorkflowDTO.getApplicationName();
+                    + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " by application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             throw new WorkflowException(errorMessage, ex);
         }
         if (monetizedSubscription.getSubscriptionId() != null) {
@@ -360,18 +374,18 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
                     stripeMonetizationDAO.removeMonetizedSubscription(monetizedSubscription.getId());
                 }
                 if (log.isDebugEnabled()) {
-                    String msg = "Monetized subscriprion for : " + subWorkflowDTO.getApiName()
-                            + " by application : " + subWorkflowDTO.getApplicationName() + " is removed successfully ";
+                    String msg = "Monetized subscriprion for : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME)
+                            + " by application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME) + " is removed successfully ";
                     log.debug(msg);
                 }
             } catch (StripeException ex) {
                 String errorMessage = "Failed to remove subcription in billing engine for : "
-                        + subWorkflowDTO.getApiName() + " by Application : " + subWorkflowDTO.getApplicationName();
+                        + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " by Application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
                 log.error(errorMessage);
                 throw new WorkflowException(errorMessage, ex);
             } catch (StripeMonetizationException ex) {
                 String errorMessage = "Failed to remove monetization subcription info from DB of : "
-                        + subWorkflowDTO.getApiName() + " by Application : " + subWorkflowDTO.getApplicationName();
+                        + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " by Application : " + subWorkflowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
                 log.error(errorMessage);
                 throw new WorkflowException(errorMessage, ex);
             }
@@ -443,13 +457,16 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
         }
         try {
             sharedCustomerParams.put(StripeMonetizationConstants.CUSTOMER_DESCRIPTION, "Shared Customer for "
-                    + subWorkFlowDTO.getApplicationName() + StripeMonetizationConstants.FILE_SEPERATOR
-                    + subWorkFlowDTO.getSubscriber());
+                    + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME) + StripeMonetizationConstants.FILE_SEPERATOR
+                    + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.SUBSCRIBER));
             sharedCustomerParams.put(StripeMonetizationConstants.CUSTOMER_SOURCE, token.getId());
             stripeCustomer = Customer.create(sharedCustomerParams, requestOptions);
             try {
-                monetizationSharedCustomer.setApplicationId(subWorkFlowDTO.getApplicationId());
-                monetizationSharedCustomer.setApiProvider(subWorkFlowDTO.getApiProvider());
+                if (subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID) != null){
+                    applicationId = Integer.parseInt(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID));
+                }
+                monetizationSharedCustomer.setApplicationId(applicationId);
+                monetizationSharedCustomer.setApiProvider(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APIPROVIDER));
                 monetizationSharedCustomer.setTenantId(subWorkFlowDTO.getTenantId());
                 monetizationSharedCustomer.setSharedCustomerId(stripeCustomer.getId());
                 monetizationSharedCustomer.setParentCustomerId(platformCustomer.getId());
@@ -460,19 +477,19 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
                 //deleting the created customer in stripe if it fails to create the DB record
                 stripeCustomer.delete(requestOptions);
                 String errorMsg = "Error when inserting Stripe shared customer details of Application : "
-                        + subWorkFlowDTO.getApplicationName() + "to database";
+                        + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME) + "to database";
                 log.error(errorMsg, ex);
                 throw new WorkflowException(errorMsg, ex);
             }
             if (log.isDebugEnabled()) {
-                String msg = "A customer for Application " + subWorkFlowDTO.getApplicationName()
-                        + " is created under the " + subWorkFlowDTO.getApiProvider()
+                String msg = "A customer for Application " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME)
+                        + " is created under the " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APIPROVIDER)
                         + "'s connected account in Stripe";
                 log.debug(msg);
             }
         } catch (StripeException ex) {
             String errorMsg = "Error while creating a shared customer in Stripe for Application : "
-                    + subWorkFlowDTO.getApplicationName();
+                    + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             log.error(errorMsg);
             throw new WorkflowException(errorMsg, ex);
         }
@@ -510,8 +527,8 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
             throws WorkflowException {
 
         StripeMonetizationDAO stripeMonetizationDAO = StripeMonetizationDAO.getInstance();
-        APIIdentifier identifier = new APIIdentifier(subWorkFlowDTO.getApiProvider(), subWorkFlowDTO.getApiName(),
-                subWorkFlowDTO.getApiVersion());
+        APIIdentifier identifier = new APIIdentifier(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APIPROVIDER), subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME),
+                subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APIVERSION));
         Subscription subscription = null;
         try {
             Map<String, Object> item = new HashMap<String, Object>();
@@ -527,29 +544,32 @@ public class StripeMonetizationSubscriptionImpl implements MonetizationSubscript
                 subscription = Subscription.create(subParams, requestOptions);
             } catch (StripeException ex) {
                 String errorMsg = "Error when adding a subscription in Stripe for Application : " +
-                        subWorkFlowDTO.getApplicationName();
+                        subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
                 log.error(errorMsg);
                 throw new WorkflowException(errorMsg, ex);
             }
             try {
-                stripeMonetizationDAO.addBESubscription(identifier, subWorkFlowDTO.getApplicationId(),
+                if (subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID) != null){
+                    applicationId = Integer.parseInt(subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONID));
+                }
+                stripeMonetizationDAO.addBESubscription(identifier, applicationId,
                         subWorkFlowDTO.getTenantId(), sharedCustomer.getId(), subscription.getId(), apiUuid);
             } catch (StripeMonetizationException e) {
                 //delete the subscription in Stripe, if the entry to database fails in API Manager
                 subscription.cancel((Map<String, Object>) null, requestOptions);
                 String errorMsg = "Error when adding stripe subscription details of Application "
-                        + subWorkFlowDTO.getApplicationName() + " to Database";
+                        + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME) + " to Database";
                 log.error(errorMsg);
                 throw new WorkflowException(errorMsg, e);
             }
             if (log.isDebugEnabled()) {
-                String msg = "Stripe subscription for " + subWorkFlowDTO.getApplicationName() + " is created for"
-                        + subWorkFlowDTO.getApiName() + " API";
+                String msg = "Stripe subscription for " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME) + " is created for"
+                        + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APINAME) + " API";
                 log.debug(msg);
             }
         } catch (StripeException ex) {
-            String errorMessage = "Failed to create subscription in Stripe for API : " + subWorkFlowDTO.getApiName()
-                    + "by Application : " + subWorkFlowDTO.getApplicationName();
+            String errorMessage = "Failed to create subscription in Stripe for API : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME)
+                    + "by Application : " + subWorkFlowDTO.getMetadata(WorkflowConstants.PayloadConstants.VARIABLE_APPLICATIONNAME);
             log.error(errorMessage);
             throw new WorkflowException(errorMessage, ex);
         }
