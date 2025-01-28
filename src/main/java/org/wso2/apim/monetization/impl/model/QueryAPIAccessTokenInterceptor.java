@@ -22,10 +22,10 @@ import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import feign.Util;
 
-public class QueyAPIAccessTokenInterceptor implements RequestInterceptor {
+public class QueryAPIAccessTokenInterceptor implements RequestInterceptor {
     private String accessToken;
 
-    public QueyAPIAccessTokenInterceptor(String accessToken) {
+    public QueryAPIAccessTokenInterceptor(String accessToken) {
         Util.checkNotNull(accessToken, "accessToken", new Object[0]);
         this.accessToken = accessToken;
     }
