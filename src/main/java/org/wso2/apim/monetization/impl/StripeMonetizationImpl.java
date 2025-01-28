@@ -57,11 +57,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.wso2.apim.monetization.impl.model.GraphQLClient;
-import org.wso2.apim.monetization.impl.model.GraphqlQueryModel;
-import org.wso2.apim.monetization.impl.model.MonetizedSubscription;
-import org.wso2.apim.monetization.impl.model.QueyAPIAccessTokenInterceptor;
-import org.wso2.apim.monetization.impl.model.graphQLResponseClient;
+import org.wso2.apim.monetization.impl.model.*;
 import org.wso2.carbon.apimgt.api.APIAdmin;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.APIProvider;
@@ -1183,7 +1179,7 @@ public class StripeMonetizationImpl implements Monetization {
                 GraphQLClient graphQLClient =
                         Feign.builder().client(new OkHttpClient()).encoder(new GsonEncoder()).decoder(new GsonDecoder())
                                 .logger(new Slf4jLogger())
-                                .requestInterceptor(new QueyAPIAccessTokenInterceptor(accessToken))
+                                .requestInterceptor(new QueryAPIAccessTokenInterceptor(accessToken))
                                 .target(GraphQLClient.class, queryApiEndpoint);
                 GraphqlQueryModel queryModel = new GraphqlQueryModel();
                 queryModel.setQuery(getGraphQLQueryBasedOnTheOperationMode(useNewQueryAPI));
