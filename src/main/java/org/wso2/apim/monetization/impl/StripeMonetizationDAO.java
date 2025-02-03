@@ -68,13 +68,10 @@ public class StripeMonetizationDAO {
      */
     public void addMonetizationPlanData(SubscriptionPolicy policy, String productId, String planId)
             throws StripeMonetizationException {
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement policyStatement = conn.prepareStatement(StripeMonetizationConstants.INSERT_MONETIZATION_PLAN_DATA_SQL)) {
 
-        Connection conn = null;
-        PreparedStatement policyStatement = null;
-        try {
-            conn = APIMgtDBUtil.getConnection();
             conn.setAutoCommit(false);
-            policyStatement = conn.prepareStatement(StripeMonetizationConstants.INSERT_MONETIZATION_PLAN_DATA_SQL);
             policyStatement.setString(1, apiMgtDAO.getSubscriptionPolicy(policy.getPolicyName(),
                     policy.getTenantId()).getUUID());
             policyStatement.setString(2, productId);
@@ -82,15 +79,6 @@ public class StripeMonetizationDAO {
             policyStatement.executeUpdate();
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    String errorMessage = "Failed to rollback adding monetization plan for : " + policy.getPolicyName();
-                    log.error(errorMessage);
-                    throw new StripeMonetizationException(errorMessage, ex);
-                }
-            }
             String errorMessage = "Failed to add monetization plan for : " + policy.getPolicyName();
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
@@ -99,8 +87,6 @@ public class StripeMonetizationDAO {
                     " from database when creating stripe plan.";
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(policyStatement, conn, null);
         }
     }
 
