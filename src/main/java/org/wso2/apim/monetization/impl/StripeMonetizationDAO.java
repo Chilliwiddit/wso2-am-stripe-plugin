@@ -567,28 +567,32 @@ public class StripeMonetizationDAO {
     public MonetizationPlatformCustomer getPlatformCustomer(int subscriberId, int tenantId) throws
             StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet result = null;
+        int apiId2 = 1;
+        int applicationId = 1;
+        int subId = 1;
+
+        String subscriptionID = getBillingEngineSubscriptionId(apiId2, applicationId);
+        String UUID = getSubscriptionUUID(subId);
+
         MonetizationPlatformCustomer monetizationPlatformCustomer = new MonetizationPlatformCustomer();
         String sqlQuery = StripeMonetizationConstants.GET_BE_PLATFORM_CUSTOMER_SQL;
-        try {
-            conn = APIMgtDBUtil.getConnection();
-            ps = conn.prepareStatement(sqlQuery);
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlQuery)){
+
             ps.setInt(1, subscriberId);
             ps.setInt(2, tenantId);
-            result = ps.executeQuery();
-            if (result.next()) {
-                monetizationPlatformCustomer.setId(result.getInt("ID"));
-                monetizationPlatformCustomer.setCustomerId(result.getString("CUSTOMER_ID"));
+            try (ResultSet result = ps.executeQuery()){
+                if (result.next()) {
+                    monetizationPlatformCustomer.setId(result.getInt("ID"));
+                    monetizationPlatformCustomer.setCustomerId(result.getString("CUSTOMER_ID"));
+                }
             }
+
         } catch (SQLException e) {
             String errorMessage = "Failed to get billing engine platform customer details for Subscriber : " +
                     subscriberId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, result);
         }
         return monetizationPlatformCustomer;
     }
