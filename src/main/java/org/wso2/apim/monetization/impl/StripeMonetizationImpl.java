@@ -1013,11 +1013,7 @@ public class StripeMonetizationImpl extends AbstractMonetization {
 
         if (data == null) {
             String errorMessage = "No Usage Data to be published";
-            try {
-                throw new StripeMonetizationException(errorMessage);
-            } catch (StripeMonetizationException e) {
-                throw new MonetizationException(errorMessage);
-            }
+            throw new MonetizationException(errorMessage);
         }
 
         currentTimestamp = data.get(0).getCurrentTimestamp(); //since the current timestamp is always the same just get the first one
