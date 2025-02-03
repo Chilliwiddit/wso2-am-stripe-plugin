@@ -536,14 +536,11 @@ public class StripeMonetizationDAO {
     public void addBESubscription(APIIdentifier identifier, int applicationId, int tenandId, int sharedCustomerId,
             String subscriptionId, String apiUuid) throws StripeMonetizationException {
 
-        Connection conn = null;
-        ResultSet rs = null;
-        PreparedStatement ps = null;
-        try {
-            conn = APIMgtDBUtil.getConnection();
+        String query = StripeMonetizationConstants.ADD_BE_SUBSCRIPTION_SQL;
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)){
+
             conn.setAutoCommit(false);
-            String query = StripeMonetizationConstants.ADD_BE_SUBSCRIPTION_SQL;
-            ps = conn.prepareStatement(query);
             ps.setString(1, apiUuid);
             ps.setInt(2, applicationId);
             ps.setInt(3, tenandId);
@@ -552,19 +549,10 @@ public class StripeMonetizationDAO {
             ps.executeUpdate();
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    log.error("Error while rolling back the failed operation", ex);
-                }
-            }
             String errorMessage = "Failed to add Stripe subscription info for API : " + identifier.getApiName() + " by"
                     + " Application : " + applicationId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, rs);
         }
     }
 
