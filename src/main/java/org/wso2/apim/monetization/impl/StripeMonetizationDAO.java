@@ -135,12 +135,10 @@ public class StripeMonetizationDAO {
     public void updateMonetizationPlanData(SubscriptionPolicy policy, String productId, String planId)
             throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement policyStatement = null;
-        try {
-            conn = APIMgtDBUtil.getConnection();
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement policyStatement = conn.prepareStatement(StripeMonetizationConstants.UPDATE_MONETIZATION_PLAN_ID_SQL)){
+
             conn.setAutoCommit(false);
-            policyStatement = conn.prepareStatement(StripeMonetizationConstants.UPDATE_MONETIZATION_PLAN_ID_SQL);
             policyStatement.setString(1, planId);
             policyStatement.setString(2, apiMgtDAO.getSubscriptionPolicy(policy.getPolicyName(),
                     policy.getTenantId()).getUUID());
@@ -148,16 +146,6 @@ public class StripeMonetizationDAO {
             policyStatement.execute();
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    String errorMessage = "Failed to rollback the update monetization plan action for policy : " +
-                            policy.getPolicyName();
-                    log.error(errorMessage);
-                    throw new StripeMonetizationException(errorMessage, ex);
-                }
-            }
             String errorMessage = "Failed to update monetization plan for policy: " + policy;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
@@ -166,9 +154,6 @@ public class StripeMonetizationDAO {
                     " when updating monetization plan data.";
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-
-        } finally {
-            APIMgtDBUtil.closeAllConnections(policyStatement, conn, null);
         }
     }
 
