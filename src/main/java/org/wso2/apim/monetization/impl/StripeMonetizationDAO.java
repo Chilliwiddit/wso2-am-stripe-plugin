@@ -225,26 +225,23 @@ public class StripeMonetizationDAO {
      */
     public String getBillingEnginePlanIdForTier(int apiID, String tierName) throws StripeMonetizationException {
 
-        Connection connection = null;
-        PreparedStatement statement = null;
         String billingEnginePlanId = StringUtils.EMPTY;
-        try {
-            connection = APIMgtDBUtil.getConnection();
+        try (Connection connection = APIMgtDBUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLAN_FOR_TIER)){
+
             connection.setAutoCommit(false);
-            statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLAN_FOR_TIER);
             statement.setInt(1, apiID);
             statement.setString(2, tierName);
-            ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
-                billingEnginePlanId = rs.getString("STRIPE_PLAN_ID");
+            try(ResultSet rs = statement.executeQuery()){
+                while (rs.next()) {
+                    billingEnginePlanId = rs.getString("STRIPE_PLAN_ID");
+                }
             }
             connection.commit();
         } catch (SQLException e) {
             String errorMessage = "Failed to get billing plan ID tier : " + tierName;
             log.error(errorMessage, e);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(statement, connection, null);
         }
         return billingEnginePlanId;
     }
