@@ -405,17 +405,16 @@ public class StripeMonetizationDAO {
     public String getBillingEngineSubscriptionId(int apiId, int applicationId) throws StripeMonetizationException {
 
         String billingEngineSubscriptionId = null;
-        Connection connection = null;
-        PreparedStatement statement = null;
-        try {
-            connection = APIMgtDBUtil.getConnection();
+        try (Connection connection = APIMgtDBUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_ENGINE_SUBSCRIPTION_ID);){
+
             connection.setAutoCommit(false);
-            statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_ENGINE_SUBSCRIPTION_ID);
             statement.setInt(1, applicationId);
             statement.setInt(2, apiId);
-            ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
-                billingEngineSubscriptionId = rs.getString("SUBSCRIPTION_ID");
+            try (ResultSet rs = statement.executeQuery()){
+                while (rs.next()) {
+                    billingEngineSubscriptionId = rs.getString("SUBSCRIPTION_ID");
+                }
             }
             connection.commit();
         } catch (SQLException e) {
@@ -423,8 +422,6 @@ public class StripeMonetizationDAO {
                     " and application ID : " + applicationId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(statement, connection, null);
         }
         return billingEngineSubscriptionId;
     }
