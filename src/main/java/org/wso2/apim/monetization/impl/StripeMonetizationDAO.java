@@ -481,46 +481,43 @@ public class StripeMonetizationDAO {
      */
     public int addBESharedCustomer(MonetizationSharedCustomer sharedCustomer) throws StripeMonetizationException {
 
-        Connection conn = null;
+        String query = StripeMonetizationConstants.ADD_BE_SHARED_CUSTOMER_SQL;
+        String idColumn = "ID";
         ResultSet rs = null;
-        PreparedStatement ps = null;
         int id = 0;
-        try {
-            conn = APIMgtDBUtil.getConnection();
-            conn.setAutoCommit(false);
-            String query = StripeMonetizationConstants.ADD_BE_SHARED_CUSTOMER_SQL;
-            ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, sharedCustomer.getApplicationId());
-            ps.setString(2, sharedCustomer.getApiProvider());
-            ps.setInt(3, sharedCustomer.getTenantId());
-            ps.setString(4, sharedCustomer.getSharedCustomerId());
-            ps.setInt(5, sharedCustomer.getParentCustomerId());
-            ps.executeUpdate();
-            ResultSet set = ps.getGeneratedKeys();
-            if (set.next()) {
-                id = set.getInt(1);
-            } else {
-                String errorMessage = "Failed to set ID of the shared customer : " + sharedCustomer.getId() +
-                        " , tenant ID : " + sharedCustomer.getTenantId() + " , application ID : " +
-                        sharedCustomer.getApplicationId();
-                throw new StripeMonetizationException(errorMessage);
+        try (Connection conn = APIMgtDBUtil.getConnection()){
+            if (conn.getMetaData().getDriverName().contains("PostgreSQL")) {
+                idColumn = "id";
             }
-            conn.commit();
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    log.error("Error while rolling back the failed operation", ex);
+            try (PreparedStatement ps = conn.prepareStatement(query, new String[]{idColumn})){
+                conn.setAutoCommit(false);
+                /*ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);*/
+                ps.setInt(1, sharedCustomer.getApplicationId());
+                ps.setString(2, sharedCustomer.getApiProvider());
+                ps.setInt(3, sharedCustomer.getTenantId());
+                ps.setString(4, sharedCustomer.getSharedCustomerId());
+                ps.setInt(5, sharedCustomer.getParentCustomerId());
+                ps.executeUpdate();
+                try (ResultSet set = ps.getGeneratedKeys()){
+                    if (set.next()) {
+                        /*id = set.getInt(1);*/
+                        id = Integer.parseInt(set.getString(1));
+                    } else {
+                        String errorMessage = "Failed to set ID of the shared customer : " + sharedCustomer.getId() +
+                                " , tenant ID : " + sharedCustomer.getTenantId() + " , application ID : " +
+                                sharedCustomer.getApplicationId();
+                        throw new StripeMonetizationException(errorMessage);
+                    }
                 }
+
+                conn.commit();
             }
+        } catch (SQLException e) {
             String errorMessage = "Failed to add info of billing engine shared customer created"
                     + " for Application with ID :" + sharedCustomer.getApplicationId()
                     + " under Provider : " + sharedCustomer.getApiProvider();
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, rs);
         }
         return id;
     }
