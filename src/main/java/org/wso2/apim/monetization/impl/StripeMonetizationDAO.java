@@ -378,31 +378,19 @@ public class StripeMonetizationDAO {
      */
     public void deleteMonetizationData(int apiId) throws StripeMonetizationException {
 
-        Connection connection = null;
-        PreparedStatement statement = null;
         boolean initialAutoCommit = false;
-        try {
-            connection = APIMgtDBUtil.getConnection();
-            statement = connection.prepareStatement(StripeMonetizationConstants.DELETE_MONETIZATION_DATA_SQL);
+        try (Connection connection = APIMgtDBUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(StripeMonetizationConstants.DELETE_MONETIZATION_DATA_SQL)){
+
             initialAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             statement.setInt(1, apiId);
             statement.executeUpdate();
             connection.commit();
         } catch (SQLException e) {
-            try {
-                if (connection != null) {
-                    connection.rollback();
-                }
-            } catch (SQLException ex) {
-                String errorMessage = "Failed to delete monetization data for API : " + apiId;
-                log.error(errorMessage);
-                throw new StripeMonetizationException(errorMessage, e);
-            } finally {
-                APIMgtDBUtil.setAutoCommit(connection, initialAutoCommit);
-            }
-        } finally {
-            APIMgtDBUtil.closeAllConnections(statement, connection, null);
+            String errorMessage = "Failed to delete monetization data for API : " + apiId;
+            log.error(errorMessage);
+            throw new StripeMonetizationException(errorMessage, e);
         }
     }
 
