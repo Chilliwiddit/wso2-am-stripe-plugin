@@ -666,29 +666,25 @@ public class StripeMonetizationDAO {
     public MonetizedSubscription getMonetizedSubscription(String apiUuid, String apiName, int applicationId,
             String tenantDomain) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet result = null;
         MonetizedSubscription monetizedSubscription = new MonetizedSubscription();
         int tenantId = APIUtil.getTenantIdFromTenantDomain(tenantDomain);
         String sqlQuery = StripeMonetizationConstants.GET_BE_SUBSCRIPTION_SQL;
-        try {
-            conn = APIMgtDBUtil.getConnection();
-            ps = conn.prepareStatement(sqlQuery);
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlQuery)) {
+
             ps.setInt(1, applicationId);
             ps.setString(2, apiUuid);
             ps.setInt(3, tenantId);
-            result = ps.executeQuery();
-            if (result.next()) {
-                monetizedSubscription.setId(result.getInt("ID"));
-                monetizedSubscription.setSubscriptionId(result.getString("SUBSCRIPTION_ID"));
+            try (ResultSet result = ps.executeQuery()){
+                if (result.next()) {
+                    monetizedSubscription.setId(result.getInt("ID"));
+                    monetizedSubscription.setSubscriptionId(result.getString("SUBSCRIPTION_ID"));
+                }
             }
         } catch (SQLException e) {
             String errorMessage = "Failed to get billing engine Subscription info for API : " + apiName;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, result);
         }
         return monetizedSubscription;
     }
