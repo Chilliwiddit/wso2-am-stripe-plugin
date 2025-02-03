@@ -289,25 +289,21 @@ public class StripeMonetizationDAO {
      */
     public String getBillingPlanId(String tierUUID) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         String planId = null;
-        try {
-            conn = APIMgtDBUtil.getConnection();
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLAN_ID)){
+
             conn.setAutoCommit(false);
-            ps = conn.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLAN_ID);
             ps.setString(1, tierUUID);
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                planId = rs.getString("PLAN_ID");
+            try (ResultSet rs = ps.executeQuery()){
+                while (rs.next()) {
+                    planId = rs.getString("PLAN_ID");
+                }
             }
         } catch (SQLException e) {
             String errorMessage = "Error while getting stripe plan ID for tier UUID : " + tierUUID;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, rs);
         }
         return planId;
     }
