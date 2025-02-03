@@ -438,41 +438,36 @@ public class StripeMonetizationDAO {
     public int addBEPlatformCustomer(int subscriberId, int tenantId, String customerId) throws
             StripeMonetizationException {
 
-        Connection conn = null;
-        ResultSet rs = null;
-        PreparedStatement ps = null;
+        String query = StripeMonetizationConstants.ADD_BE_PLATFORM_CUSTOMER_SQL;
+        String idColumn = "ID";
         int id = 0;
-        try {
-            conn = APIMgtDBUtil.getConnection();
-            conn.setAutoCommit(false);
-            String query = StripeMonetizationConstants.ADD_BE_PLATFORM_CUSTOMER_SQL;
-            ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, subscriberId);
-            ps.setInt(2, tenantId);
-            ps.setString(3, customerId);
-            ps.executeUpdate();
-            ResultSet set = ps.getGeneratedKeys();
-            if (set.next()) {
-                id = set.getInt(1);
-            } else {
-                String errorMessage = "Failed to get ID of the monetized subscription. Subscriber ID : " +
-                        subscriberId + " , tenant ID : " + tenantId + " , customer ID : " + customerId;
-                throw new StripeMonetizationException(errorMessage);
+        try (Connection conn = APIMgtDBUtil.getConnection()){
+            if (conn.getMetaData().getDriverName().contains("PostgreSQL")) {
+                idColumn = "id";
             }
-            conn.commit();
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    log.error("Error while rolling back the failed operation", ex);
+            try(PreparedStatement ps = conn.prepareStatement(query, new String[]{idColumn})){
+                conn.setAutoCommit(false);
+                /*ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);*/
+                ps.setInt(1, subscriberId);
+                ps.setInt(2, tenantId);
+                ps.setString(3, customerId);
+                ps.executeUpdate();
+                try (ResultSet set = ps.getGeneratedKeys()){
+                    if (set.next()) {
+                        /*id = set.getInt(1);*/
+                        id = Integer.parseInt(set.getString(1));
+                    } else {
+                        String errorMessage = "Failed to get ID of the monetized subscription. Subscriber ID : " +
+                                subscriberId + " , tenant ID : " + tenantId + " , customer ID : " + customerId;
+                        throw new StripeMonetizationException(errorMessage);
+                    }
                 }
+                conn.commit();
             }
+        } catch (SQLException e) {
             String errorMessage = "Failed to add Stripe platform customer details for Subscriber : " + subscriberId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, rs);
         }
         return id;
     }
