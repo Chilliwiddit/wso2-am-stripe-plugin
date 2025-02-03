@@ -165,27 +165,15 @@ public class StripeMonetizationDAO {
      */
     public void deleteMonetizationPlanData(SubscriptionPolicy policy) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement policyStatement = null;
-        try {
-            conn = APIMgtDBUtil.getConnection();
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement policyStatement = conn.prepareStatement(StripeMonetizationConstants.DELETE_MONETIZATION_PLAN_DATA)){
+
             conn.setAutoCommit(false);
-            policyStatement = conn.prepareStatement(StripeMonetizationConstants.DELETE_MONETIZATION_PLAN_DATA);
             policyStatement.setString(1, apiMgtDAO.getSubscriptionPolicy(policy.getPolicyName(),
                     policy.getTenantId()).getUUID());
             policyStatement.executeUpdate();
             conn.commit();
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    String errorMessage = "Failed to rollback the delete monetization plan action for policy : " +
-                            policy.getPolicyName();
-                    log.error(errorMessage);
-                    throw new StripeMonetizationException(errorMessage, ex);
-                }
-            }
             String errorMessage = "Failed to delete the monetization plan action for policy : " + policy.getPolicyName();
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
@@ -194,8 +182,6 @@ public class StripeMonetizationDAO {
                     " when deleting monetization plan.";
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(policyStatement, conn, null);
         }
     }
 
