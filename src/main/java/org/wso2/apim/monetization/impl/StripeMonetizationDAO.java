@@ -317,25 +317,21 @@ public class StripeMonetizationDAO {
      */
     public String getSubscriptionUUID(int subscriptionId) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         String planId = null;
-        try {
-            conn = APIMgtDBUtil.getConnection();
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(StripeMonetizationConstants.GET_SUBSCRIPTION_UUID)){
+
             conn.setAutoCommit(false);
-            ps = conn.prepareStatement(StripeMonetizationConstants.GET_SUBSCRIPTION_UUID);
             ps.setInt(1, subscriptionId);
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                planId = rs.getString("UUID");
+            try (ResultSet rs = ps.executeQuery()){
+                while (rs.next()) {
+                    planId = rs.getString("UUID");
+                }
             }
         } catch (SQLException e) {
             String errorMessage = "Error while getting UUID of subscription ID : " + subscriptionId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, rs);
         }
         return planId;
     }
