@@ -257,14 +257,11 @@ public class StripeMonetizationDAO {
     public void addMonetizationData(int apiId, String productId, Map<String, String> tierPlanMap)
             throws StripeMonetizationException {
 
-        PreparedStatement preparedStatement = null;
-        Connection connection = null;
         boolean initialAutoCommit = false;
-        try {
+        try (Connection connection = APIMgtDBUtil.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(StripeMonetizationConstants.ADD_MONETIZATION_DATA_SQL)){
+
             if (!tierPlanMap.isEmpty()) {
-                connection = APIMgtDBUtil.getConnection();
-                preparedStatement = connection.prepareStatement(StripeMonetizationConstants.ADD_MONETIZATION_DATA_SQL);
-                initialAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 for (Map.Entry<String, String> entry : tierPlanMap.entrySet()) {
                     preparedStatement.setInt(1, apiId);
@@ -277,19 +274,9 @@ public class StripeMonetizationDAO {
                 connection.commit();
             }
         } catch (SQLException e) {
-            try {
-                if (connection != null) {
-                    connection.rollback();
-                }
-            } catch (SQLException ex) {
-                String errorMessage = "Failed to rollback add monetization data for API : " + apiId;
-                log.error(errorMessage, e);
-                throw new StripeMonetizationException(errorMessage, e);
-            } finally {
-                APIMgtDBUtil.setAutoCommit(connection, initialAutoCommit);
-            }
-        } finally {
-            APIMgtDBUtil.closeAllConnections(preparedStatement, connection, null);
+            String errorMessage = "Failed to add monetization data for API : " + apiId;
+            log.error(errorMessage);
+            throw new StripeMonetizationException(errorMessage, e);
         }
     }
 
