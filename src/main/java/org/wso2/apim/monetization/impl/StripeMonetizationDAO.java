@@ -99,19 +99,17 @@ public class StripeMonetizationDAO {
      */
     public Map<String, String> getPlanData(SubscriptionPolicy policy) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
         Map<String, String> planData = new HashMap<String, String>();
-        try {
-            conn = APIMgtDBUtil.getConnection();
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLAN_DATA)){
+
             conn.setAutoCommit(false);
-            ps = conn.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLAN_DATA);
             ps.setString(1, apiMgtDAO.getSubscriptionPolicy(policy.getPolicyName(), policy.getTenantId()).getUUID());
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                planData.put(StripeMonetizationConstants.PRODUCT_ID, rs.getString("PRODUCT_ID"));
-                planData.put(StripeMonetizationConstants.PLAN_ID, rs.getString("PLAN_ID"));
+            try(ResultSet rs = ps.executeQuery()){
+                while (rs.next()) {
+                    planData.put(StripeMonetizationConstants.PRODUCT_ID, rs.getString("PRODUCT_ID"));
+                    planData.put(StripeMonetizationConstants.PLAN_ID, rs.getString("PLAN_ID"));
+                }
             }
         } catch (SQLException e) {
             String errorMessage = "Error while getting plan data for : " + policy.getPolicyName() + " policy.";
@@ -122,8 +120,6 @@ public class StripeMonetizationDAO {
                     " when getting plan data.";
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, rs);
         }
         return planData;
     }
