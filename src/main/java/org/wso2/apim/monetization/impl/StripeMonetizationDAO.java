@@ -348,27 +348,24 @@ public class StripeMonetizationDAO {
             throws StripeMonetizationException {
 
         Map<String, String> stripePlanTierMap = new HashMap<String, String>();
-        Connection connection = null;
-        PreparedStatement statement = null;
-        try {
-            connection = APIMgtDBUtil.getConnection();
+        try (Connection connection = APIMgtDBUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLANS_BY_PRODUCT)){
+
             connection.setAutoCommit(false);
-            statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_PLANS_BY_PRODUCT);
             statement.setInt(1, apiID);
             statement.setString(2, stripeProductId);
-            ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
-                String tierName = rs.getString("TIER_NAME");
-                String stripePlanId = rs.getString("STRIPE_PLAN_ID");
-                stripePlanTierMap.put(tierName, stripePlanId);
+            try (ResultSet rs = statement.executeQuery()){
+                while (rs.next()) {
+                    String tierName = rs.getString("TIER_NAME");
+                    String stripePlanId = rs.getString("STRIPE_PLAN_ID");
+                    stripePlanTierMap.put(tierName, stripePlanId);
+                }
             }
             connection.commit();
         } catch (SQLException e) {
             String errorMessage = "Failed to get stripe plan and tier mapping for API : " + apiID;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(statement, connection, null);
         }
         return stripePlanTierMap;
     }
