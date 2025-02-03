@@ -640,21 +640,16 @@ public class StripeMonetizationDAO {
      */
     public void removeMonetizedSubscription(int id) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet result = null;
         String sqlQuery = StripeMonetizationConstants.DELETE_BE_SUBSCRIPTION_SQL;
-        try {
-            conn = APIMgtDBUtil.getConnection();
-            ps = conn.prepareStatement(sqlQuery);
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlQuery)){
+
             ps.setInt(1, id);
             ps.executeUpdate();
         } catch (SQLException e) {
             String errorMessage = "Failed to remove monetization info from DB of subscription with ID : " + id;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, result);
         }
     }
 
