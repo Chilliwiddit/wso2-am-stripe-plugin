@@ -609,29 +609,25 @@ public class StripeMonetizationDAO {
     public MonetizationSharedCustomer getSharedCustomer(int applicationId, String apiProvider,
                                                         int tenantId) throws StripeMonetizationException {
 
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet result = null;
         MonetizationSharedCustomer monetizationSharedCustomer = new MonetizationSharedCustomer();
         String sqlQuery = StripeMonetizationConstants.GET_BE_SHARED_CUSTOMER_SQL;
-        try {
-            conn = APIMgtDBUtil.getConnection();
-            ps = conn.prepareStatement(sqlQuery);
+        try (Connection conn = APIMgtDBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlQuery)){
+
             ps.setInt(1, applicationId);
             ps.setString(2, apiProvider);
             ps.setInt(3, tenantId);
-            result = ps.executeQuery();
-            if (result.next()) {
-                monetizationSharedCustomer.setId(result.getInt("ID"));
-                monetizationSharedCustomer.setSharedCustomerId(result.getString("SHARED_CUSTOMER_ID"));
+            try (ResultSet result = ps.executeQuery()){
+                if (result.next()) {
+                    monetizationSharedCustomer.setId(result.getInt("ID"));
+                    monetizationSharedCustomer.setSharedCustomerId(result.getString("SHARED_CUSTOMER_ID"));
+                }
             }
         } catch (SQLException e) {
             String errorMessage = "Failed to get billing Engine Shared Customer details for application with ID : " +
                     applicationId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(ps, conn, result);
         }
         return monetizationSharedCustomer;
     }
