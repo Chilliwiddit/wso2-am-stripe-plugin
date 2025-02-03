@@ -195,24 +195,22 @@ public class StripeMonetizationDAO {
     public String getBillingEngineProductId(int apiId) throws StripeMonetizationException {
 
         String billingEngineProductId = null;
-        Connection connection = null;
-        PreparedStatement statement = null;
-        try {
-            connection = APIMgtDBUtil.getConnection();
+
+        try (Connection connection = APIMgtDBUtil.getConnection();
+             PreparedStatement statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_ENGINE_PRODUCT_BY_API)){
+
             connection.setAutoCommit(false);
-            statement = connection.prepareStatement(StripeMonetizationConstants.GET_BILLING_ENGINE_PRODUCT_BY_API);
             statement.setInt(1, apiId);
-            ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
-                billingEngineProductId = rs.getString("STRIPE_PRODUCT_ID");
+            try (ResultSet rs = statement.executeQuery()){
+                while (rs.next()) {
+                    billingEngineProductId = rs.getString("STRIPE_PRODUCT_ID");
+                }
             }
             connection.commit();
         } catch (SQLException e) {
             String errorMessage = "Failed to get billing engine product ID of API : " + apiId;
             log.error(errorMessage);
             throw new StripeMonetizationException(errorMessage, e);
-        } finally {
-            APIMgtDBUtil.closeAllConnections(statement, connection, null);
         }
         return billingEngineProductId;
     }
