@@ -1020,12 +1020,13 @@ public class StripeMonetizationImpl extends AbstractMonetization {
 
         for (MonetizationDTO info : data) {
             apiUuid = info.getApiUuid();
-            apiName = info.getApiName();
-            apiVersion = info.getApiVersion();
             tenantDomain = info.getTenantDomain();
             applicationName = info.getApplicationName();
             applicationOwner = info.getApplicationOwner();
             try{
+                APIInfo apiInfo = apiMgtDAO.getAPIInfoByUUID(apiUuid);
+                apiName = apiInfo.getName();
+                apiVersion = apiInfo.getVersion();
                 applicationId = apiMgtDAO.getApplicationId(applicationName, applicationOwner);
                 apiProvider = apiMgtDAO.getAPIProviderByNameAndVersion(apiName, apiVersion, tenantDomain);
             } catch (APIManagementException e){
