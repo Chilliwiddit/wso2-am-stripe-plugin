@@ -105,6 +105,8 @@
                         <Private-Package>
                             co.elastic.clients.*,
                             org.elasticsearch.client.*,
+                            org.apache.http.impl.nio.*,
+                            org.apache.http.nio.*,
                         </Private-Package>
                         <Export-Package>
                             org.wso2.apim.monetization.impl.*,
@@ -113,13 +115,10 @@
                         <Import-Package>
                             !com.google.gson.internal,
                             io.opentelemetry.api.common.*,
-                            org.apache.http.impl.nio.*,
-                            org.apache.http.nio.*,
                         </Import-Package>
                         <DynamicImport-Package>*</DynamicImport-Package>
                         <Embed-Dependency>
                             opentelemetry-api;scope=compile|runtime;inline=false,
-                            httpasyncclient;scope=compile|runtime;inline=false,
                         </Embed-Dependency>
                     </instructions>
                 </configuration>
