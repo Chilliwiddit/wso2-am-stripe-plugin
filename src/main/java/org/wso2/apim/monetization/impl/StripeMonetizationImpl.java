@@ -1009,7 +1009,7 @@ public class StripeMonetizationImpl extends AbstractMonetization {
         int counter = 0;
         APIAdmin apiAdmin = new APIAdminImpl();
 
-        ArrayList<MonetizationUsageInfo> data = (ArrayList<MonetizationUsageInfo>) usageData;
+        List<MonetizationDTO> data = (ArrayList<MonetizationDTO>) usageData;
 
         if (data == null) {
             String errorMessage = "No Usage Data to be published";
@@ -1018,7 +1018,7 @@ public class StripeMonetizationImpl extends AbstractMonetization {
 
         currentTimestamp = data.get(0).getCurrentTimestamp(); //since the current timestamp is always the same just get the first one
 
-        for (MonetizationUsageInfo info : data) {
+        for (MonetizationDTO info : data) {
             apiUuid = info.getApiUuid();
             apiName = info.getApiName();
             apiVersion = info.getApiVersion();
