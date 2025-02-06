@@ -1013,10 +1013,10 @@ public class StripeMonetizationImpl extends AbstractMonetization {
 
         if (data == null) {
             String errorMessage = "No Usage Data to be published";
-            throw new MonetizationException(errorMessage);
+            log.error(errorMessage);
         }
 
-        currentTimestamp = data.get(0).getCurrentTimestamp(); //since the current timestamp is always the same just get the first one
+        currentTimestamp = data.get(0).getCurrentTimestamp();
 
         for (MonetizationDTO info : data) {
             apiUuid = info.getApiUuid();
