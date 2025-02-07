@@ -567,13 +567,6 @@ public class StripeMonetizationDAO {
     public MonetizationPlatformCustomer getPlatformCustomer(int subscriberId, int tenantId) throws
             StripeMonetizationException {
 
-        int apiId2 = 1;
-        int applicationId = 1;
-        int subId = 1;
-
-        String subscriptionID = getBillingEngineSubscriptionId(apiId2, applicationId);
-        String UUID = getSubscriptionUUID(subId);
-
         MonetizationPlatformCustomer monetizationPlatformCustomer = new MonetizationPlatformCustomer();
         String sqlQuery = StripeMonetizationConstants.GET_BE_PLATFORM_CUSTOMER_SQL;
         try (Connection conn = APIMgtDBUtil.getConnection();
